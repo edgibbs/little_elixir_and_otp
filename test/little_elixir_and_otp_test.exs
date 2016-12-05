@@ -1,8 +1,9 @@
 defmodule LittleElixirAndOtpTest do
-  use ExUnit.Case
-  doctest LittleElixirAndOtp
+  defmodule MeterToFootConverterTest do
+    use ExUnit.Case
 
-  test "the truth" do
-    assert 1 + 1 == 2
+    test "somthing" do
+      assert LittleElixirAndOtp.MeterToFootConverter.convert(1) == 3.28084
+    end
   end
 end
