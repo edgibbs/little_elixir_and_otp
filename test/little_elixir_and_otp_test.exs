@@ -38,4 +38,12 @@ defmodule LittleElixirAndOtpTest do
       end
     end
   end
+
+  defmodule CalculationsTest do
+    use ExUnit.Case
+
+    test "sums a list" do
+      assert LittleElixirAndOtp.Calculations.sum([1,2,3]) == 6
+    end
+  end
 end
