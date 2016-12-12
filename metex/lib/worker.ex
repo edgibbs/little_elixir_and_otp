@@ -1,6 +1,16 @@
 defmodule Metex.Worker do
   @http_client Application.get_env(:metex, :http_client)
 
+  def loop do
+    receive do
+      {sender_pid, location} ->
+        send(sender_pid, {:ok, temperature_of(location)})
+      _ ->
+        IO.puts "don't know how to process this message"
+    end
+    loop
+  end
+
   def temperature_of(location) do
     result = url_for(location) |> @http_client.get |> parse_response
     case result do
@@ -21,7 +31,7 @@ defmodule Metex.Worker do
     body |> JSON.decode! |> compute_temperature
   end
 
-  defp parse_response(other) do
+  defp parse_response(_) do
     :error
   end
 
