@@ -25,4 +25,11 @@ defmodule CacheTest do
     assert Cache.read(:b) == nil
     assert Cache.read(:c) == nil
   end
+
+  test "can check for existence" do
+    Cache.start_link
+    assert Cache.exist?(:real_key) == false
+    Cache.write(:real_key, "real key")
+    assert Cache.exist?(:real_key) == true
+  end
 end

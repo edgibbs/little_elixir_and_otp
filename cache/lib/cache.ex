@@ -23,6 +23,10 @@ defmodule Cache do
     GenServer.cast(:cache_worker, :clear)
   end
 
+  def exist?(key) do
+    GenServer.call(:cache_worker, {:exist?, key})
+  end
+
   ## Server callbacks
 
   def handle_cast({:write, key, value}, cache) do
@@ -39,5 +43,9 @@ defmodule Cache do
 
   def handle_call({:read, key}, _from, cache) do
     {:reply, Map.get(cache, key), cache}
+  end
+
+  def handle_call({:exist?, key}, _from, cache) do
+    {:reply, Map.has_key?(cache, key), cache}
   end
 end
