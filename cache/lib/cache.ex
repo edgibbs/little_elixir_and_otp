@@ -3,23 +3,19 @@ defmodule Cache do
 
   ## Client API
 
-  def write(pid, key, value) do
-    IO.puts "what"
-    GenServer.cast(pid, {:write, key, value})
+  def write(key, value) do
+    GenServer.cast(:cache_worker, {:write, key, value})
   end
 
-  def read(pid, key) do
-    GenServer.call(pid, {:read, key})
+  def read(key) do
+    GenServer.call(:cache_worker, {:read, key})
+  end
+
+  def start_link do
+    GenServer.start_link(__MODULE__, %{}, name: :cache_worker)
   end
 
   ## Server callbacks
-  def start_link do
-    GenServer.start_link(__MODULE__, :ok, [])
-  end
-
-  def init(:ok) do
-    {:ok, %{}}
-  end
 
   def handle_cast({:write, key, value}, state) do
     {:noreply, Map.put(state, key, value)}
