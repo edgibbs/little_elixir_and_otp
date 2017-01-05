@@ -97,7 +97,7 @@ defmodule Pooly.Server do
   end
 
   defp prepopulate(size, sup, workers) do
-    prepopulate(size - 1, sup, [new_worker(sup) | workers])
+    prepopulate(size-1, sup, [new_worker(sup) | workers])
   end
 
   defp new_worker(sup) do
