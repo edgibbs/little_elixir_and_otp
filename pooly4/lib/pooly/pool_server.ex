@@ -3,7 +3,7 @@ defmodule Pooly.PoolServer do
   import Supervisor.Spec
 
   defmodule State do
-    defstruct pool_sup: nil, worker_sup: nil, monitors: nil, size: nil, workers: nil, name: nil, mfa: nil, overflow: nil, :max_overflow: nil
+    defstruct pool_sup: nil, worker_sup: nil, monitors: nil, size: nil, workers: nil, name: nil, mfa: nil, overflow: nil, max_overflow: nil
   end
 
   def start_link(pool_sup, pool_config) do
