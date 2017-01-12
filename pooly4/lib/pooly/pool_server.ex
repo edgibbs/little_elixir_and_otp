@@ -100,56 +100,56 @@ defmodule Pooly.PoolServer do
       [[]] ->
         {:noreply, state}
     end
+  end
+
+  def handle_info({:EXIT, worker_sup, reason}, state = %{worker_sup: worker_sup}) do
+    {:stop, reason, state}
+  end
+
+  def handle_info({:EXIT, pid, _reason}, state = %{monitors: monitors, workers: workers, pool_sup: pool_sup}) do
+    case :ets.lookup(monitors, pid) do
+      [{pid, ref}] ->
+        true = Process.demonitor(ref)
+        true = :ets.delete(monitors, pid)
+        new_state = %{state | workers: [new_worker(pool_sup)|workers]}
+        {:noreply, new_state}
+
+      _ ->
+        {:noreply, state}
     end
+  end
 
-    def handle_info({:EXIT, worker_sup, reason}, state = %{worker_sup: worker_sup}) do
-      {:stop, reason, state}
-    end
+  #####################
+  # Private Functions #
+  #####################
 
-    def handle_info({:EXIT, pid, _reason}, state = %{monitors: monitors, workers: workers, pool_sup: pool_sup}) do
-      case :ets.lookup(monitors, pid) do
-        [{pid, ref}] ->
-          true = Process.demonitor(ref)
-          true = :ets.delete(monitors, pid)
-          new_state = %{state | workers: [new_worker(pool_sup)|workers]}
-          {:noreply, new_state}
+  defp name(pool_name) do
+    :"#{pool_name}Server"
+  end
 
-        _ ->
-          {:noreply, state}
-      end
-    end
+  defp prepopulate(size, sup) do
+    prepopulate(size, sup, [])
+  end
 
-    #####################
-    # Private Functions #
-    #####################
+  defp prepopulate(size, _sup, workers) when size < 1 do
+    workers
+  end
 
-    defp name(pool_name) do
-      :"#{pool_name}Server"
-    end
+  defp prepopulate(size, sup, workers) do
+    prepopulate(size-1, sup, [new_worker(sup) | workers])
+  end
 
-    defp prepopulate(size, sup) do
-      prepopulate(size, sup, [])
-    end
+  defp new_worker(sup) do
+    {:ok, worker} = Supervisor.start_child(sup, [[]])
+    Process.link(worker)
+    worker
+  end
 
-    defp prepopulate(size, _sup, workers) when size < 1 do
-      workers
-    end
-
-    defp prepopulate(size, sup, workers) do
-      prepopulate(size-1, sup, [new_worker(sup) | workers])
-    end
-
-    defp new_worker(sup) do
-      {:ok, worker} = Supervisor.start_child(sup, [[]])
-      Process.link(worker)
-      worker
-    end
-
-    defp supervisor_spec(name, mfa) do
-      # NOTE: The reason this is set to temporary is because the WorkerSupervisor
-      #       is started by the PoolServer.
-      opts = [id: name <> "WorkerSupervisor", shutdown: 10000, restart: :temporary]
-      supervisor(Pooly.WorkerSupervisor, [self, mfa], opts)
-    end
+  defp supervisor_spec(name, mfa) do
+    # NOTE: The reason this is set to temporary is because the WorkerSupervisor
+    #       is started by the PoolServer.
+    opts = [id: name <> "WorkerSupervisor", shutdown: 10000, restart: :temporary]
+    supervisor(Pooly.WorkerSupervisor, [self, mfa], opts)
+  end
 
 end
