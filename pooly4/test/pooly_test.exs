@@ -3,6 +3,7 @@ defmodule PoolyTest do
   doctest Pooly
 
   test "the truth" do
+    # just used for compiling checks right now
     assert 1 + 1 == 2
   end
 end
