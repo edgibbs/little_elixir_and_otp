@@ -48,6 +48,10 @@ defmodule Pooly.PoolServer do
     init(rest, %{state | size: size})
   end
 
+  def init([{:max_overflow, max_overflow}|rest], state) do
+    init(rest, %{state | max_overflow: max_overflow})
+  end
+
   def init([], state) do
     send(self, :start_worker_supervisor)
     {:ok, state}
