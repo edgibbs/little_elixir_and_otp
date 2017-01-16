@@ -61,15 +61,36 @@ defmodule Pooly.PoolServer do
     init(rest, state)
   end
 
-  def handle_call(:checkout, {from_pid, _ref}, %{workers: workers, monitors: monitors} = state) do
+  # def handle_call(:checkout, {from_pid, _ref}, %{workers: workers, monitors: monitors} = state) do
+  #   case workers do
+  #     [worker|rest] ->
+  #       ref = Process.monitor(from_pid)
+  #       true = :ets.insert(monitors, {worker, ref})
+  #       {:reply, worker, %{state | workers: rest}}
+
+  #     [] ->
+  #       {:reply, :noproc, state}
+  #   end
+  # end
+
+  def handle_call({:checkout, block}, {from_pid, _ref} = from, state) do
+    %{worker_sup: worker_sup,
+      workers: workers,
+      monitors: monitors,
+      overflow: overflow,
+      max_overflow: max_overflow} = state
+
     case workers do
       [worker|rest] ->
         ref = Process.monitor(from_pid)
         true = :ets.insert(monitors, {worker, ref})
         {:reply, worker, %{state | workers: rest}}
-
+      [] when max_overflow > 0 and overflow < max_overflow ->
+        {worker, ref} = new_worker(worker_sup, from_pid)
+        true = :ets.insert(monitors, {worker, ref})
+        {:reply, worker, %{state | overflow: overflow+1}}
       [] ->
-        {:reply, :noproc, state}
+        {:reply, :full, state};
     end
   end
 
@@ -148,6 +169,14 @@ defmodule Pooly.PoolServer do
     Process.link(worker)
     worker
   end
+
+  # NOTE: We use this when we have to queue up the consumer
+  defp new_worker(sup, from_pid) do
+    pid = new_worker(sup)
+    ref = Process.monitor(from_pid)
+    {pid, ref}
+  end
+
 
   defp supervisor_spec(name, mfa) do
     # NOTE: The reason this is set to temporary is because the WorkerSupervisor
