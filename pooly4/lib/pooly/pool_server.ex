@@ -177,6 +177,34 @@ defmodule Pooly.PoolServer do
     {pid, ref}
   end
 
+  def handle_checkin(pid, state) do
+    %{worker_sup:   worker_sup,
+      workers:      workers,
+      monitors:     monitors,
+      waiting:      waiting,
+      overflow:     overflow} = state
+
+    case :queue.out(waiting) do
+      {{:value, {from, ref}}, left} ->
+        true = :ets.insert(monitors, {pid, ref})
+        GenServer.reply(from, pid)
+        %{state | waiting: left}
+
+        # what case? this seems to handle an inconsistent state
+      {:empty, empty} when overflow > 0 ->
+        :ok = dismiss_worker(worker_sup, pid)
+        %{state | waiting: empty, overflow: overflow-1}
+
+      {:empty, empty} ->
+        # NOTE: This is how we used to add workers back
+        %{state | waiting: empty, workers: [pid|workers], overflow: 0}
+    end
+  end
+
+  defp dismiss_worker(sup, pid) do
+    true = Process.unlink(pid)
+    Supervisor.terminate_child(sup, pid)
+  end
 
   defp supervisor_spec(name, mfa) do
     # NOTE: The reason this is set to temporary is because the WorkerSupervisor
